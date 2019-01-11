@@ -5,25 +5,11 @@ const Utils = require('../utils');
 const Schema = mongoose.Schema;
 
 const RoomSchema = new Schema({
-  roomName: {
-    type: String
-  },
-  streamKey: {
-    type: String
-  },
   userId: {
     type: String
   },
-  liveStatus: {
-    type: Number,
-    default: 0
-  },
-  filePath: {
-    type: String,
-    default: ''
-  },
-  comments: {
-    type: Array
+  content: {
+    type: String
   },
   countViewer: {
     type: Number,

@@ -18,6 +18,9 @@ fs.readdirSync(shopmodelsPath).forEach(file => {
   }
 });
 
+// Controller
+const userController = require('./app/controllers/usercontroller')
+
 const server = http.createServer(app);
 const io = socketIO(server);
 
@@ -44,15 +47,10 @@ app.use(
   })
 );
 app.use(bodyParser.json());
-// app.set('socketio', io);
-// app.set('server', server);
 app.use(express.static(`${__dirname}/public`));
 
-app.get('/dcm', (req,res)=>{
-  return res.json({
-    "message": "dmm"
-  })
-})
+app.use('/authenciation', userController)
+
 server.listen(3333, err => {
   // server.listen(3333, '103.221.221.111', err => {
   if (err) {
@@ -98,73 +96,4 @@ nms.on('getFilePath', (streamPath, oupath, mp4Filename) => {
   console.log(oupath);
   console.log(mp4Filename);
   utils.setMp4FilePath(oupath + '/' + mp4Filename);
-});
-
-nms.on('preConnect', (id, args) => {
-  console.log(
-    '[NodeEvent on preConnect]',
-    `id=${id} args=${JSON.stringify(args)}`
-  );
-  // let session = nms.getSession(id);
-  // session.reject();
-});
-
-nms.on('postConnect', (id, args) => {
-  console.log(
-    '[NodeEvent on postConnect]',
-    `id=${id} args=${JSON.stringify(args)}`
-  );
-});
-
-nms.on('doneConnect', (id, args) => {
-  console.log(
-    '[NodeEvent on doneConnect]',
-    `id=${id} args=${JSON.stringify(args)}`
-  );
-});
-
-nms.on('prePublish', (id, StreamPath, args) => {
-  console.log(
-    '[NodeEvent on prePublish]',
-    `id=${id} StreamPath=${StreamPath} args=${JSON.stringify(args)}`
-  );
-  // let session = nms.getSession(id);
-  // session.reject();
-});
-
-nms.on('postPublish', (id, StreamPath, args) => {
-  console.log(
-    '[NodeEvent on postPublish]',
-    `id=${id} StreamPath=${StreamPath} args=${JSON.stringify(args)}`
-  );
-});
-
-nms.on('donePublish', (id, StreamPath, args) => {
-  console.log(
-    '[NodeEvent on donePublish]',
-    `id=${id} StreamPath=${StreamPath} args=${JSON.stringify(args)}`
-  );
-});
-
-nms.on('prePlay', (id, StreamPath, args) => {
-  console.log(
-    '[NodeEvent on prePlay]',
-    `id=${id} StreamPath=${StreamPath} args=${JSON.stringify(args)}`
-  );
-  // let session = nms.getSession(id);
-  // session.reject();
-});
-
-nms.on('postPlay', (id, StreamPath, args) => {
-  console.log(
-    '[NodeEvent on postPlay]',
-    `id=${id} StreamPath=${StreamPath} args=${JSON.stringify(args)}`
-  );
-});
-
-nms.on('donePlay', (id, StreamPath, args) => {
-  console.log(
-    '[NodeEvent on donePlay]',
-    `id=${id} StreamPath=${StreamPath} args=${JSON.stringify(args)}`
-  );
 });

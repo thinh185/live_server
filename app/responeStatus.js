@@ -1,0 +1,6 @@
+const RESPONESE_STATUS = {
+  SUCCESS: 200,
+  ERROR: 500
+};
+
+module.exports = RESPONESE_STATUS;

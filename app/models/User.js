@@ -4,32 +4,18 @@ const Utils = require('../utils');
 
 const Schema = mongoose.Schema;
 
-const RoomSchema = new Schema({
-  roomName: {
+const UserSchema = new Schema({
+  username: {
+    type: String
+  },
+  password: {
     type: String
   },
   streamKey: {
-    type: String
-  },
-  userId: {
-    type: String
-  },
-  liveStatus: {
-    type: Number,
+    type: String,
     default: 0
   },
-  filePath: {
-    type: String,
-    default: ''
-  },
-  comments: {
-    type: Array
-  },
-  countViewer: {
-    type: Number,
-    default: 1
-  },
-  countHeart: {
+  status: {
     type: Number,
     default: 0
   },
@@ -43,4 +29,4 @@ const RoomSchema = new Schema({
   }
 });
 
-module.exports = mongoose.model('Room', RoomSchema, 'rooms');
+module.exports = mongoose.model('User', UserSchema, 'users');

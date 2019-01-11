@@ -4,8 +4,12 @@ const moment = require('moment-timezone');
 const { exec } = require('child_process');
 var fs = require('fs');
 let writeStream = fs.createWriteStream('../serverLog');
+var uniqid = require('uniqid')
 
 const Room = mongoose.model('Room');
+const User = mongoose.model('User');
+const Message = mongoose.model('Message');
+
 const Utils = require('../utils');
 const LiveStatus = require('../liveStatus');
 const roomList = {};
@@ -25,16 +29,12 @@ module.exports = io => {
   }
   
   function createNewRoom(roomName, error) {
-    // if (roomList.hasOwnProperty(roomName)) {
-    //   if (error) error('Room already used.');
-    // } else {
     roomList[roomName] = {
       participant: [],
       countHeart: 0,
-      countViewer: 1,
+      countViewer: 0,
       messages: []
     };
-    // }
   }
   
   function findParticipant(socketId) {
@@ -52,14 +52,11 @@ module.exports = io => {
   io.on('connection', (socket) => {
     console.log('connection');
   
-    socket.on('testconnect', ()=> {
-      console.log('da vao');
-      
+    socket.on('testconnect', ()=> {      
       setInterval(()=>{
         io.emit('testconnect', {message: 'user connected'});
-        writeStream.write(`${Date.now()}----- user connected \n`)
-        console.log("da xong");
-      },5000)
+        writeStream.write(`${Utils.getCurrentDateTime}----- user connected \n`)
+      },30000)
       
     })
   
@@ -120,11 +117,13 @@ module.exports = io => {
     socket.on('register-live-stream', data => {
       console.log('register-live-stream');
       const liveStatus = LiveStatus.REGISTER;
-      const { roomName, userId } = data;
+      const { userId, streamKey } = data;
+      const roomName = `${streamKey}-${uniqid()}`
       createNewRoom(roomName);
       roomList[roomName].participant.push({
         socketId: socket.id,
-        userId: userId
+        userId: userId,
+        streamKey
       });
       socket.join(roomName);
       socket.roomName = roomName;
@@ -142,6 +141,7 @@ module.exports = io => {
         condition.userId = userId;
         condition.liveStatus = liveStatus;
         condition.createdAt = Utils.getCurrentDateTime();
+        condition.filePath = Utils.getLastestVideo(userId)
         Room.create(condition);
       });
     });
@@ -150,6 +150,7 @@ module.exports = io => {
       const liveStatus = LiveStatus.ON_LIVE;
       const { roomName, userId } = data;
       socket.liveStatus = liveStatus;
+      User.findByIdAndUpdate(userId, { status: 1 })
       Room.findOneAndUpdate(
         { roomName, userId },
         { liveStatus, createdAt: Utils.getCurrentDateTime() },
@@ -164,6 +165,8 @@ module.exports = io => {
       const liveStatus = LiveStatus.FINISH;
       const { roomName, userId } = data;
       const filePath = Utils.getMp4FilePath();
+      const filePath = Utils.getLastestVideo(userId);
+
       const messages = roomList[roomName].messages;
       const countViewer = roomList[roomName].countViewer;
       const countHeart = roomList[roomName].countHeart;
@@ -192,6 +195,7 @@ module.exports = io => {
       const { roomName } = data;
       roomList[roomName].countHeart += 1;
       socket.broadcast.to(roomName).emit('send-heart');
+      Room.findOneAndUpdate({roomName}, { countHeart: roomList[roomName].countHeart})
     });
   
     socket.on('send-message', data => {
