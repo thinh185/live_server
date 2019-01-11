@@ -6,9 +6,9 @@ var fs = require('fs');
 let writeStream = fs.createWriteStream('../serverLog');
 var uniqid = require('uniqid')
 
-const Room = mongoose.model('Room');
-const User = mongoose.model('User');
-const Message = mongoose.model('Message');
+const Room = require('../models/Room')
+const User = require('../models/User')
+const Message = require('../models/Comments')
 
 const Utils = require('../utils');
 const LiveStatus = require('../liveStatus');
@@ -165,7 +165,7 @@ module.exports = io => {
       const liveStatus = LiveStatus.FINISH;
       const { roomName, userId } = data;
       const filePath = Utils.getMp4FilePath();
-      const filePath = Utils.getLastestVideo(userId);
+      // const filePath = Utils.getLastestVideo(userId);
 
       const messages = roomList[roomName].messages;
       const countViewer = roomList[roomName].countViewer;

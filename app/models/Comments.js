@@ -4,7 +4,7 @@ const Utils = require('../utils');
 
 const Schema = mongoose.Schema;
 
-const RoomSchema = new Schema({
+const CommentSchema = new Schema({
   userId: {
     type: String
   },
@@ -29,4 +29,4 @@ const RoomSchema = new Schema({
   }
 });
 
-module.exports = mongoose.model('Room', RoomSchema, 'rooms');
+module.exports = mongoose.model('CommentSchema', CommentSchema, 'comments');

@@ -41,17 +41,16 @@ mongoose.connect(
   }
 );
 
-app.use(
-  bodyParser.urlencoded({
-    extended: true
-  })
-);
-app.use(bodyParser.json());
+app.use(bodyParser.json() )
+app.use(bodyParser.urlencoded({extended: true}))
+app.get('/dcm', (req,res)=>{
+  return res.json({dm: "dm"})
+})
+app.use('/authen', userController)
+
 app.use(express.static(`${__dirname}/public`));
 
-app.use('/authenciation', userController)
-
-server.listen(3333, err => {
+server.listen(3333,"127.0.0.1", err => {
   // server.listen(3333, '103.221.221.111', err => {
   if (err) {
     console.log(err);

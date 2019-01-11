@@ -23,13 +23,22 @@ const formResponse = (code , data) => {
   return { code, result: { data } }
 }
 
-const encryptPw = async (pw) => {
-  const salt = await bcrypt.genSalt(saltRounds)
-  return await bcrypt.hash(pw, salt)
+const encryptPw = (pw) => {
+  return new Promise(resolve => {
+      bcrypt.hash(pw, saltRounds, function(err, hash) {
+        // Store hash in your password DB.
+          resolve(hash)
+      });
+  })
+  
 }
 
 const checkPw = async (pw, hash) => {
-  return await bcrypt.compare(pw, hash)
+  return new Promise(resolve => {
+    bcrypt.compare(pw, hash , (err,res) =>{
+      resolve(res)
+    })
+  }) 
 }
 
 const getLastestVideo = async (folder) => {
