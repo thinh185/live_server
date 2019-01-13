@@ -115,7 +115,7 @@ module.exports = io => {
     });
   
     socket.on('register-live-stream', data => {
-      console.log('register-live-stream');
+      console.log('register-live-stream ',data);
       const liveStatus = LiveStatus.REGISTER;
       const { userId, streamKey } = data;
       const roomName = `${streamKey}-${uniqid()}`
@@ -129,10 +129,12 @@ module.exports = io => {
       socket.roomName = roomName;
       socket.userId = userId;
       socket.liveStatus = liveStatus;
-      socket.broadcast
-        .to(roomName)
+      console.log('register-live-stream ',roomName);
+
+      socket.broadcast.to(roomName)
         .emit('changed-live-status', { roomName, userId, liveStatus });
       return Room.findOne({ roomName, userId }).exec((error, foundRoom) => {
+        
         if (foundRoom) {
           return;
         }
@@ -141,24 +143,25 @@ module.exports = io => {
         condition.userId = userId;
         condition.liveStatus = liveStatus;
         condition.createdAt = Utils.getCurrentDateTime();
-        condition.filePath = Utils.getLastestVideo(userId)
+        condition.filePath = ''
         Room.create(condition);
       });
     });
   
     socket.on('begin-live-stream', data => {
       const liveStatus = LiveStatus.ON_LIVE;
-      const { roomName, userId } = data;
+      const { roomName , userId } = data;
+      console.log('roomName123456 data ', data);
+
+      console.log('roomName123456 ', roomName, liveStatus, userId);
+      
       socket.liveStatus = liveStatus;
-      User.findByIdAndUpdate(userId, { status: 1 })
-      Room.findOneAndUpdate(
-        { roomName, userId },
-        { liveStatus, createdAt: Utils.getCurrentDateTime() },
-        { new: true }
-      ).exec((error, result) => console.log(error));
+      Room.findOneAndUpdate({ roomName, userId },{ liveStatus, createdAt: Utils.getCurrentDateTime() },)
       socket.broadcast
         .to(roomName)
         .emit('changed-live-status', { roomName, userId, liveStatus });
+      console.log('done');
+
     });
   
     socket.on('finish-live-stream', data => {
@@ -222,37 +225,6 @@ module.exports = io => {
         productId,
         productUrl,
         productImageUrl
-      });
-    });
-  
-    socket.on('ping_ping', data => {
-      console.log("Data from client ", data.message)
-      writeStream.write(`${Date.now}-----${data.message}`)
-    })
-    socket.on('replay', (data, callback) => {
-      console.log('replay');
-      const { roomName, userId } = data;
-      console.log(data);
-  
-      Room.findOne({ roomName }).exec((error, result) => {
-        callback(result);
-        if (result !== null && result !== undefined) {
-          const commandExec = `ffmpeg -re -i ${
-            result.filePath
-          } -c:v libx264 -preset superfast -maxrate 3000k -bufsize 6000k -pix_fmt yuv420p -g 50 -c:a aac -b:a 160k -ac 2 -ar 44100 -f flv rtmp://localhost/live/${
-            result.roomName
-          }/replayfor${userId}`;
-          exec(commandExec, (err, stdout, stderr) => {
-            if (err) {
-              // node couldn't execute the command
-              console.log('error ',err)
-              return;
-            }
-            // the *entire* stdout and stderr (buffered)
-            console.log(`stdout: ${stdout}`);
-            console.log(`stderr: ${stderr}`);
-          });
-        }
       });
     });
   });

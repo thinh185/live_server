@@ -31,7 +31,8 @@ global.appRoot = path.resolve(__dirname);
 
 mongoose.connect(
   "mongodb://127.0.0.1:27017/livestream?authSource=admin",
-  { useNewUrlParser: true, user: 'admin', pass: '123456' },
+  // { useNewUrlParser: true, user: 'admin', pass: '123456' },
+  { useNewUrlParser: true, user: 'mongoadmin', pass: 'mongoadmin' },
   err => {
     if (err) {
       console.log(err);

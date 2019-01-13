@@ -2,6 +2,7 @@ const moment = require('moment-timezone');
 let mp4FilePath = '';
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
+const fs = require('fs');
 
 const rootMedia = '../media'
 
@@ -20,7 +21,7 @@ const getCurrentDateTime = () => {
 };
 
 const formResponse = (code , data) => {
-  return { code, result: { data } }
+  return { code, result: data }
 }
 
 const encryptPw = (pw) => {
@@ -42,7 +43,7 @@ const checkPw = async (pw, hash) => {
 }
 
 const getLastestVideo = async (folder) => {
-  var files = fs.readdirSync(dir);
+  var files = fs.readdirSync(rootMedia+ folder);
   files.sort((a, b) => {
     return fs.statSync(dir + a).mtime.getTime() - fs.statSync(dir + b).mtime.getTime();
   });
