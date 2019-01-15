@@ -20,6 +20,7 @@ fs.readdirSync(shopmodelsPath).forEach(file => {
 
 // Controller
 const userController = require('./app/controllers/usercontroller')
+const streamController = require('./app/controllers/streamController')
 
 const server = http.createServer(app);
 const io = socketIO(server);
@@ -31,8 +32,8 @@ global.appRoot = path.resolve(__dirname);
 
 mongoose.connect(
   "mongodb://127.0.0.1:27017/livestream?authSource=admin",
-  // { useNewUrlParser: true, user: 'admin', pass: '123456' },
-  { useNewUrlParser: true, user: 'mongoadmin', pass: 'mongoadmin' },
+  { useNewUrlParser: true, user: 'admin', pass: '123456' },
+  // { useNewUrlParser: true, user: 'mongoadmin', pass: 'mongoadmin' },
   err => {
     if (err) {
       console.log(err);
@@ -48,11 +49,11 @@ app.get('/dcm', (req,res)=>{
   return res.json({dm: "dm"})
 })
 app.use('/authen', userController)
+app.use('/stream', streamController)
 
 app.use(express.static(`${__dirname}/public`));
 
-server.listen(3333,"127.0.0.1", err => {
-  // server.listen(3333, '103.221.221.111', err => {
+server.listen(3333,"172.16.1.158", err => {
   if (err) {
     console.log(err);
   } else {
@@ -61,7 +62,6 @@ server.listen(3333,"127.0.0.1", err => {
 });
 
 const nodeMediaServerConfig = {
-  // logType: 3,
   rtmp: {
     port: 1935,
     chunk_size: 60000,

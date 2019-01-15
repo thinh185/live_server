@@ -1,7 +1,3 @@
-const mongoose = require('mongoose');
-const config = require('config');
-const moment = require('moment-timezone');
-const { exec } = require('child_process');
 var fs = require('fs');
 let writeStream = fs.createWriteStream('../serverLog');
 var uniqid = require('uniqid')
@@ -15,21 +11,10 @@ const LiveStatus = require('../liveStatus');
 const roomList = {};
 
 module.exports = io => {
-  function socketIdsInRoom(roomName) {
-    var socketIds = io.nsps['/'].adapter.rooms[roomName].sockets;
-    if (socketIds) {
-      var collection = [];
-      for (var key in socketIds) {
-        collection.push(key);
-      }
-      return collection;
-    } else {
-      return [];
-    }
-  }
-  
-  function createNewRoom(roomName, error) {
-    roomList[roomName] = {
+
+  function createNewRoom(roomName, socket_master) {
+    roomList[`${roomName}`] = {
+      master: socket_master,
       participant: [],
       countHeart: 0,
       countViewer: 0,
@@ -50,21 +35,37 @@ module.exports = io => {
   let writeStream = fs.createWriteStream('./serverLog');
   
   io.on('connection', (socket) => {
-    console.log('connection');
   
-    socket.on('testconnect', ()=> {      
+    socket.on('testconnect', ()=> {
       setInterval(()=>{
         io.emit('testconnect', {message: 'user connected'});
         writeStream.write(`${Utils.getCurrentDateTime}----- user connected \n`)
-      },30000)
-      
+      },300000)
     })
   
     socket.on('disconnect', () => {
       console.log('Disconnect');
-      writeStream.write(`${Date.now()}----- Disconnect`)
+      writeStream.write(`${Date.now()}--${socket.id}-- disconnect`)
       const { roomName, userId, liveStatus } = socket;
+      if(!roomName) return
       for (let roomName in roomList) {
+        if(roomList[roomName].master === userId){
+          const liveStatus = LiveStatus.FINISH;
+          const filePath = Utils.getMp4FilePath();
+
+          const messages = roomList[roomName].messages;
+          const countViewer = roomList[roomName].countViewer;
+          const countHeart = roomList[roomName].countHeart;
+          socket.liveStatus = liveStatus;
+          
+          Room.findOneAndUpdate(
+            { roomName, userId },
+            { liveStatus, filePath, countViewer, countHeart, messages },
+            { new: true });
+          delete roomList[roomName];
+          break;
+        }
+
         for (let i = 0; i < roomList[roomName].participant.length; i++) {
           if (roomList[roomName].participant[i].socketId == socket.id) {
             socket.broadcast.to(roomName).emit('leave-client');
@@ -72,68 +73,52 @@ module.exports = io => {
             break;
           }
         }
-        if (
-          roomList.hasOwnProperty(roomName) &&
-          roomList[roomName].participant.length === 0
-        ) {
-          delete roomList[roomName];
-        }
-      }
-      if (socket.roomName) {
-        socket.leave(socket.roomName);
-      }
-      console.log(JSON.stringify(roomList));
-      if (liveStatus === LiveStatus.REGISTER) {
-        Room.findOneAndRemove({ roomName, userId }).exec((error, result) => {
-          console.log(error);
-        });
       }
     });
   
-    socket.on('join-server', (data, callback) => {
-      console.log('join-server');
-      const { roomName, userId } = data;
+    socket.on('join-server', (data) => {
+      const { roomName, userId, username } = data;
+      // socket client
       socket.join(roomName);
       socket.roomName = roomName;
-      socket.broadcast.to(roomName).emit('join-client');
-      socketIds = socketIdsInRoom(roomName);
       roomList[roomName].countViewer += 1;
+      io.to(roomName).emit('join-client', { newViewer: {userId, username}, countViewer: roomList[roomName].countViewer += 1 });
+      Room.findOneAndUpdate({roomName},{countViewer: roomList[roomName].countViewer})
       roomList[roomName].participant.push({
         socketId: socket.id,
         userId: userId
       });
-      console.log(JSON.stringify(roomList));
-      callback(socketIds.length);
     });
   
     socket.on('leave-server', data => {
       console.log('leave-server');
       const { roomName, userId } = data;
       socket.leave(roomName);
-      socket.roomName = null;
-      socket.broadcast.to(roomName).emit('leave-client');
+      socket.roomName = '';
+      io.to(roomName).emit('leave-client');
     });
   
     socket.on('register-live-stream', data => {
       console.log('register-live-stream ',data);
       const liveStatus = LiveStatus.REGISTER;
       const { userId, streamKey } = data;
-      const roomName = `${streamKey}-${uniqid()}`
-      createNewRoom(roomName);
+      const roomName = `${streamKey}_${uniqid()}`
+      createNewRoom(roomName, socket.id);
+      
       roomList[roomName].participant.push({
         socketId: socket.id,
         userId: userId,
         streamKey
       });
+
       socket.join(roomName);
       socket.roomName = roomName;
       socket.userId = userId;
       socket.liveStatus = liveStatus;
-      console.log('register-live-stream ',roomName);
 
-      socket.broadcast.to(roomName)
-        .emit('changed-live-status', { roomName, userId, liveStatus });
-      return Room.findOne({ roomName, userId }).exec((error, foundRoom) => {
+      io.to(roomName).emit('on_live_stream', { roomName, userId, liveStatus });
+
+      return Room.findOne({ roomName, userId },(error, foundRoom) => {
         
         if (foundRoom) {
           return;
@@ -143,6 +128,7 @@ module.exports = io => {
         condition.userId = userId;
         condition.liveStatus = liveStatus;
         condition.createdAt = Utils.getCurrentDateTime();
+        condition.updateAt = Utils.getCurrentDateTime();
         condition.filePath = ''
         Room.create(condition);
       });
@@ -151,53 +137,42 @@ module.exports = io => {
     socket.on('begin-live-stream', data => {
       const liveStatus = LiveStatus.ON_LIVE;
       const { roomName , userId } = data;
-      console.log('roomName123456 data ', data);
-
-      console.log('roomName123456 ', roomName, liveStatus, userId);
       
       socket.liveStatus = liveStatus;
-      Room.findOneAndUpdate({ roomName, userId },{ liveStatus, createdAt: Utils.getCurrentDateTime() },)
-      socket.broadcast
-        .to(roomName)
-        .emit('changed-live-status', { roomName, userId, liveStatus });
-      console.log('done');
+      Room.findOneAndUpdate({ roomName },
+        { liveStatus : 1, updateAt: Utils.getCurrentDateTime() },
+        {new: true}, async (err,res) =>{
+          const user = await User.findById(res.userId)
 
+          socket.broadcast.emit('new-live-stream', {
+            ...res._doc, username: user.username
+          });
+      })
     });
   
     socket.on('finish-live-stream', data => {
       const liveStatus = LiveStatus.FINISH;
       const { roomName, userId } = data;
       const filePath = Utils.getMp4FilePath();
-      // const filePath = Utils.getLastestVideo(userId);
 
       const messages = roomList[roomName].messages;
       const countViewer = roomList[roomName].countViewer;
       const countHeart = roomList[roomName].countHeart;
       socket.liveStatus = liveStatus;
-  
+      
       Room.findOneAndUpdate(
         { roomName, userId },
         { liveStatus, filePath, countViewer, countHeart, messages },
-        { new: true }
-      ).exec((error, result) => console.log(error));
-      socket.broadcast
-        .to(roomName)
-        .emit('changed-live-status', { roomName, userId, liveStatus });
-    });
-  
-    socket.on('cancel-live-stream', data => {
-      const liveStatus = LiveStatus.CANCEL;
-      const { roomName, userId } = data;
-      socket.broadcast
-        .to(roomName)
-        .emit('changed-live-status', { roomName, userId, liveStatus });
+        { new: true }, async (err, res) => {
+          socket.broadcast.emit('live-stream-finish', {roomName} );
+        });
     });
   
     socket.on('send-heart', data => {
       console.log('send-heart');
       const { roomName } = data;
       roomList[roomName].countHeart += 1;
-      socket.broadcast.to(roomName).emit('send-heart');
+      io.to(roomName).emit('send-heart',{ countHeart: roomList[roomName].countHeart});
       Room.findOneAndUpdate({roomName}, { countHeart: roomList[roomName].countHeart})
     });
   
@@ -206,25 +181,20 @@ module.exports = io => {
       const {
         roomName,
         userId,
+        username,
         message,
-        productId,
-        productUrl,
-        productImageUrl
       } = data;
       roomList[roomName].messages.push({
         userId,
+        username,
         message,
         productId,
-        productUrl,
-        productImageUrl,
         createdAt: Utils.getCurrentDateTime()
       });
-      socket.broadcast.to(roomName).emit('send-message', {
+      io.to(roomName).emit('send-message', {
         userId,
         message,
-        productId,
-        productUrl,
-        productImageUrl
+        username,
       });
     });
   });
