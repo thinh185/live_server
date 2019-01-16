@@ -27,7 +27,7 @@ const RoomSchema = new Schema({
   },
   countViewer: {
     type: Number,
-    default: 1
+    default: 0
   },
   countHeart: {
     type: Number,

@@ -20,6 +20,9 @@ module.exports = io => {
       countViewer: 0,
       messages: []
     };
+
+    console.log('new Room ', roomList );
+    
   }
   
   function findParticipant(socketId) {
@@ -77,12 +80,14 @@ module.exports = io => {
     });
   
     socket.on('join-server', (data) => {
-      const { roomName, userId, username } = data;
+      const { roomName, userId } = data;
       // socket client
+      console.log('roomname user id', roomName, userId);
+      
       socket.join(roomName);
       socket.roomName = roomName;
       roomList[roomName].countViewer += 1;
-      io.to(roomName).emit('join-client', { newViewer: {userId, username}, countViewer: roomList[roomName].countViewer += 1 });
+      io.to(roomName).emit('join-client', { roomName, countViewer: roomList[roomName].countViewer});
       Room.findOneAndUpdate({roomName},{countViewer: roomList[roomName].countViewer})
       roomList[roomName].participant.push({
         socketId: socket.id,
@@ -136,6 +141,7 @@ module.exports = io => {
   
     socket.on('begin-live-stream', data => {
       const liveStatus = LiveStatus.ON_LIVE;
+      
       const { roomName , userId } = data;
       
       socket.liveStatus = liveStatus;
@@ -143,36 +149,37 @@ module.exports = io => {
         { liveStatus : 1, updateAt: Utils.getCurrentDateTime() },
         {new: true}, async (err,res) =>{
           const user = await User.findById(res.userId)
-
-          socket.broadcast.emit('new-live-stream', {
-            ...res._doc, username: user.username
+          io.local.emit('new-live-stream', {
+            newroom: {...res._doc, username: user.username}
           });
       })
     });
   
     socket.on('finish-live-stream', data => {
       const liveStatus = LiveStatus.FINISH;
-      const { roomName, userId } = data;
+      const { roomName } = data;
       const filePath = Utils.getMp4FilePath();
 
+      console.log('roomName roomName ',roomName, liveStatus);
+      
       const messages = roomList[roomName].messages;
       const countViewer = roomList[roomName].countViewer;
       const countHeart = roomList[roomName].countHeart;
       socket.liveStatus = liveStatus;
       
       Room.findOneAndUpdate(
-        { roomName, userId },
+        { roomName },
         { liveStatus, filePath, countViewer, countHeart, messages },
         { new: true }, async (err, res) => {
-          socket.broadcast.emit('live-stream-finish', {roomName} );
+          io.local.emit('live-stream-finish', {roomName} );
         });
     });
   
     socket.on('send-heart', data => {
-      console.log('send-heart');
       const { roomName } = data;
+      
       roomList[roomName].countHeart += 1;
-      io.to(roomName).emit('send-heart',{ countHeart: roomList[roomName].countHeart});
+      io.to(roomName).emit('send-heart',{ roomName,countHeart: roomList[roomName].countHeart});
       Room.findOneAndUpdate({roomName}, { countHeart: roomList[roomName].countHeart})
     });
   
