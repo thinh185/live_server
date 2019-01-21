@@ -195,14 +195,16 @@ module.exports = io => {
         userId,
         username,
         message,
-        productId,
         createdAt: Utils.getCurrentDateTime()
       });
       io.to(roomName).emit('send-message', {
-        userId,
-        message,
-        username,
+        comment: {message, userId, username},
+        roomName
       });
+      Room.findOneAndUpdate(
+        {roomName},
+        {$push: { comments: {message, userId, username} }}
+      )
     });
   });
 };
