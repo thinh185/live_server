@@ -42,13 +42,11 @@ module.exports = io => {
     socket.on('testconnect', ()=> {
       setInterval(()=>{
         io.emit('testconnect', {message: 'user connected'});
-        writeStream.write(`${Utils.getCurrentDateTime}----- user connected \n`)
       },300000)
     })
   
     socket.on('disconnect', () => {
       console.log('Disconnect');
-      writeStream.write(`${Date.now()}--${socket.id}-- disconnect`)
       const { roomName, userId, liveStatus } = socket;
       if(!roomName) return
       for (let roomName in roomList) {
@@ -79,7 +77,7 @@ module.exports = io => {
       }
     });
   
-    socket.on('join-server', (data) => {
+    socket.on('join-server', async (data) => {
       const { roomName, userId } = data;
       // socket client
       console.log('roomname user id', roomName, userId);
@@ -87,7 +85,8 @@ module.exports = io => {
       socket.join(roomName);
       socket.roomName = roomName;
       roomList[roomName].countViewer += 1;
-      io.to(roomName).emit('join-client', { roomName, countViewer: roomList[roomName].countViewer});
+      const newuser = await User.findById(userId)
+      io.to(roomName).emit('join-client', { roomName, countViewer: roomList[roomName].countViewer, newuser});
       Room.findOneAndUpdate({roomName},{countViewer: roomList[roomName].countViewer})
       roomList[roomName].participant.push({
         socketId: socket.id,
