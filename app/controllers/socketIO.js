@@ -17,6 +17,11 @@ module.exports = io => {
       master: socket_master,
       participant: [],
       countHeart: 0,
+      countLike: 0,
+      countSad: 0,
+      countHappy: 0,
+      countWow: 0,
+      countUrgy: 0,
       countViewer: 0,
       messages: []
     };
@@ -160,30 +165,67 @@ module.exports = io => {
       const filePath = Utils.getMp4FilePath();
 
       console.log('roomName roomName ',roomName, liveStatus);
+      try {
+        
+        const messages = roomList[roomName].messages;
+        const countViewer = roomList[roomName].countViewer;
+        const countHeart = roomList[roomName].countHeart;
+        socket.liveStatus = liveStatus;
+        Room.findOneAndUpdate(
+          { roomName },
+          { liveStatus, filePath, countViewer, countHeart, messages },
+          { new: true }, async (err, res) => {
+            io.local.emit('live-stream-finish', {roomName} );
+          });  
+      } catch (error) {
+        
+      }
       
-      const messages = roomList[roomName].messages;
-      const countViewer = roomList[roomName].countViewer;
-      const countHeart = roomList[roomName].countHeart;
-      socket.liveStatus = liveStatus;
-      
-      Room.findOneAndUpdate(
-        { roomName },
-        { liveStatus, filePath, countViewer, countHeart, messages },
-        { new: true }, async (err, res) => {
-          io.local.emit('live-stream-finish', {roomName} );
-        });
     });
   
     socket.on('send-heart', data => {
-      const { roomName } = data;
-      
-      roomList[roomName].countHeart += 1;
-      io.to(roomName).emit('send-heart',{ roomName,countHeart: roomList[roomName].countHeart});
-      Room.findOneAndUpdate({roomName}, { countHeart: roomList[roomName].countHeart})
+      const { roomName, type } = data;
+      console.log('type', type);
+      console.log('type', roomName);
+      try {
+        switch(type){
+          case 'Angry':
+            console.log('argy');
+            roomList[roomName].countUrgy += 1;
+            break;
+          case 'Laugh':
+            console.log('laugh');
+            roomList[roomName].countHappy += 1;
+            break;
+          case 'Wow':
+            console.log('wow');
+            roomList[roomName].countWow += 1;
+            break;
+          case 'Like':
+            console.log('like');
+            roomList[roomName].countHeart += 1;
+            break;
+          case 'ThumpUp':
+            console.log('thumb');
+            roomList[roomName].countLike += 1;
+            break;
+          default:
+            console.log('sad');
+            roomList[roomName].countSad += 1;
+            break;
+            
+        }
+        const { countUrgy, countHappy, countWow, countLike, countSad, countHeart } = roomList[roomName]
+        io.to(roomName).emit('send-heart',
+        { roomName,countUrgy, countHappy, countWow, countLike, countSad, countHeart});
+        Room.findOneAndUpdate({roomName}, { countUrgy, countHappy, countWow, countLike, countSad, countHeart})
+      } catch (error) {
+        
+      }
     });
   
     socket.on('send-message', data => {
-      console.log('send-message');
+      console.log('send-message ', data.roomName);
       const {
         roomName,
         userId,
@@ -196,14 +238,20 @@ module.exports = io => {
         message,
         createdAt: Utils.getCurrentDateTime()
       });
-      io.to(roomName).emit('send-message', {
-        comment: {message, userId, username},
-        roomName
-      });
-      Room.findOneAndUpdate(
-        {roomName},
-        {$push: { comments: {message, userId, username} }}
-      )
+      Room.updateOne(
+        {roomName: data.roomName},
+        {$push: { comments: {message, userId, username} }},
+        {new: true, safe: true, upsert: true })
+        .then((result)=>{
+          console.log('result ', result);
+          io.to(roomName).emit('send-message', {
+            comment: {message, userId, username},
+            roomName
+          });
+        }).catch(err => {
+          console.log('rooor ', err);
+          
+        })
     });
   });
 };

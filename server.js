@@ -23,7 +23,9 @@ const userController = require('./app/controllers/usercontroller')
 const streamController = require('./app/controllers/streamController')
 
 const server = http.createServer(app);
-const io = socketIO(server);
+const io = socketIO(server,{
+  upgradeTimeout: 3600000
+});
 
 const socketIOController = require('./app/controllers/socketIO')(io);
 
@@ -31,14 +33,14 @@ mongoose.Promise = global.Promise;
 global.appRoot = path.resolve(__dirname);
 
 mongoose.connect(
-  "mongodb://127.0.0.1:27017/livestream?authSource=admin",
+  "mongodb://127.0.0.1:27017/livestream_upgrade?authSource=admin",
   { useNewUrlParser: true, user: 'admin', pass: '123456' },
   // { useNewUrlParser: true, user: 'mongoadmin', pass: 'mongoadmin' },
   err => {
     if (err) {
       console.log(err);
     } else {
-      console.log('Connected to the database: ', "mongodb://127.0.0.1:27017/livestream?authSource=admin");
+      console.log('Connected to the database: ', "mongodb://127.0.0.1:27017/livestream_upgrade?authSource=admin");
     }
   }
 );
@@ -53,8 +55,8 @@ app.use('/stream', streamController)
 
 app.use(express.static(`${__dirname}/public`));
 
-server.listen(3333,"172.16.1.158", err => {
-// server.listen(3333,"172.16.2.5", err => {
+// server.listen(3333,"172.16.1.158", err => {
+server.listen(3333,"172.16.2.5", err => {
   if (err) {
     console.log(err);
   } else {
@@ -62,39 +64,39 @@ server.listen(3333,"172.16.1.158", err => {
   }
 });
 
-const nodeMediaServerConfig = {
-  rtmp: {
-    port: 1935,
-    chunk_size: 60000,
-    gop_cache: true,
-    ping: 60,
-    ping_timeout: 30
-  },
-  http: {
-    port: 8000,
-    mediaroot: './media',
-    allow_origin: '*'
-  },
-  trans: {
-    ffmpeg: '/usr/bin/ffmpeg',
-    tasks: [
-      {
-        app: 'live',
-        ac: 'aac',
-        mp4: true,
-        mp4Flags: '[movflags=faststart]'
-      }
-    ]
-  }
-};
+// const nodeMediaServerConfig = {
+//   rtmp: {
+//     port: 1935,
+//     chunk_size: 60000,
+//     gop_cache: true,
+//     ping: 60,
+//     ping_timeout: 30
+//   },
+//   http: {
+//     port: 8000,
+//     mediaroot: './media',
+//     allow_origin: '*'
+//   },
+//   trans: {
+//     ffmpeg: '/usr/bin/ffmpeg',
+//     tasks: [
+//       {
+//         app: 'live',
+//         ac: 'aac',
+//         mp4: true,
+//         mp4Flags: '[movflags=faststart]'
+//       }
+//     ]
+//   }
+// };
 
-var nms = new NodeMediaServer(nodeMediaServerConfig);
-nms.run();
+// var nms = new NodeMediaServer(nodeMediaServerConfig);
+// nms.run();
 
-nms.on('getFilePath', (streamPath, oupath, mp4Filename) => {
-  console.log('---------------- get file path ---------------');
-  console.log(streamPath);
-  console.log(oupath);
-  console.log(mp4Filename);
-  utils.setMp4FilePath(oupath + '/' + mp4Filename);
-});
+// nms.on('getFilePath', (streamPath, oupath, mp4Filename) => {
+//   console.log('---------------- get file path ---------------');
+//   console.log(streamPath);
+//   console.log(oupath);
+//   console.log(mp4Filename);
+//   utils.setMp4FilePath(oupath + '/' + mp4Filename);
+// });

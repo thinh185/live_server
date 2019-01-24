@@ -29,7 +29,27 @@ const RoomSchema = new Schema({
     type: Number,
     default: 0
   },
+  countLike: {
+    type: Number,
+    default: 0
+  },
   countHeart: {
+    type: Number,
+    default: 0
+  },
+  countSad: {
+    type: Number,
+    default: 0
+  },
+  countHappy: {
+    type: Number,
+    default: 0
+  },
+  countWow: {
+    type: Number,
+    default: 0
+  },
+  countUrgy: {
     type: Number,
     default: 0
   },
