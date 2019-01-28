@@ -1,10 +1,9 @@
 var fs = require('fs');
-let writeStream = fs.createWriteStream('../serverLog');
 var uniqid = require('uniqid')
 
 const Room = require('../models/Room')
 const User = require('../models/User')
-const Message = require('../models/Comments')
+const Comment = require('../models/Comments')
 
 const Utils = require('../utils');
 const LiveStatus = require('../liveStatus');
@@ -25,23 +24,8 @@ module.exports = io => {
       countViewer: 0,
       messages: []
     };
+  }
 
-    console.log('new Room ', roomList );
-    
-  }
-  
-  function findParticipant(socketId) {
-    for (let roomName in roomList) {
-      for (let i = 0; i < roomList[roomName].participant.length; i++) {
-        if (roomList[roomName].participant[i].socketId == socketId) {
-          return roomList[roomName].participant[i];
-        }
-      }
-    }
-    return null;
-  }
-  let writeStream = fs.createWriteStream('./serverLog');
-  
   io.on('connection', (socket) => {
   
     socket.on('testconnect', ()=> {
@@ -51,7 +35,6 @@ module.exports = io => {
     })
   
     socket.on('disconnect', () => {
-      console.log('Disconnect');
       const { roomName, userId, liveStatus } = socket;
       if(!roomName) return
       for (let roomName in roomList) {
@@ -84,9 +67,6 @@ module.exports = io => {
   
     socket.on('join-server', async (data) => {
       const { roomName, userId } = data;
-      // socket client
-      console.log('roomname user id', roomName, userId);
-      
       socket.join(roomName);
       socket.roomName = roomName;
       roomList[roomName].countViewer += 1;
@@ -100,7 +80,6 @@ module.exports = io => {
     });
   
     socket.on('leave-server', data => {
-      console.log('leave-server');
       const { roomName, userId } = data;
       socket.leave(roomName);
       socket.roomName = '';
@@ -108,7 +87,6 @@ module.exports = io => {
     });
   
     socket.on('register-live-stream', data => {
-      console.log('register-live-stream ',data);
       const liveStatus = LiveStatus.REGISTER;
       const { userId, streamKey } = data;
       const roomName = `${streamKey}_${uniqid()}`
@@ -164,9 +142,7 @@ module.exports = io => {
       const { roomName } = data;
       const filePath = Utils.getMp4FilePath();
 
-      console.log('roomName roomName ',roomName, liveStatus);
       try {
-        
         const messages = roomList[roomName].messages;
         const countViewer = roomList[roomName].countViewer;
         const countHeart = roomList[roomName].countHeart;
@@ -185,32 +161,25 @@ module.exports = io => {
   
     socket.on('send-heart', data => {
       const { roomName, type } = data;
-      console.log('type', type);
-      console.log('type', roomName);
+
       try {
         switch(type){
           case 'Angry':
-            console.log('argy');
             roomList[roomName].countUrgy += 1;
             break;
           case 'Laugh':
-            console.log('laugh');
             roomList[roomName].countHappy += 1;
             break;
           case 'Wow':
-            console.log('wow');
             roomList[roomName].countWow += 1;
             break;
           case 'Like':
-            console.log('like');
             roomList[roomName].countHeart += 1;
             break;
           case 'ThumpUp':
-            console.log('thumb');
             roomList[roomName].countLike += 1;
             break;
           default:
-            console.log('sad');
             roomList[roomName].countSad += 1;
             break;
             
@@ -238,20 +207,28 @@ module.exports = io => {
         message,
         createdAt: Utils.getCurrentDateTime()
       });
-      Room.updateOne(
-        {roomName: data.roomName},
-        {$push: { comments: {message, userId, username} }},
-        {new: true, safe: true, upsert: true })
-        .then((result)=>{
-          console.log('result ', result);
-          io.to(roomName).emit('send-message', {
-            comment: {message, userId, username},
-            roomName
-          });
-        }).catch(err => {
-          console.log('rooor ', err);
-          
-        })
+      const condition = {};
+
+      condition.userId = userId
+      condition.username= username
+      condition.content = message
+      
+      Comment.create(condition).then(res => {
+        Room.updateOne(
+          {roomName: data.roomName},
+          {$push: { comments: res._id }},
+          {new: true, safe: true, upsert: true })
+          .then((result)=>{
+            console.log('result ', result);
+            io.to(roomName).emit('send-message', {
+              comment: {id: res._id,message, userId, username},
+              roomName
+            });
+          }).catch(err => {
+            console.log('error ', err);
+          })
+      })
+      
     });
   });
 };

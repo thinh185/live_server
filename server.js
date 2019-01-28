@@ -7,9 +7,8 @@ const http = require('http');
 const fs = require('fs');
 const bodyParser = require('body-parser');
 const path = require('path');
-const config = require('config');
-const utils = require('./app/utils');
 const socketIO = require('socket.io');
+const process = require("dotenv").config({path: 'product.env'});
 
 const shopmodelsPath = `${__dirname}/app/models/`;
 fs.readdirSync(shopmodelsPath).forEach(file => {
@@ -33,9 +32,8 @@ mongoose.Promise = global.Promise;
 global.appRoot = path.resolve(__dirname);
 
 mongoose.connect(
-  "mongodb://127.0.0.1:27017/livestream_upgrade?authSource=admin",
-  { useNewUrlParser: true, user: 'admin', pass: '123456' },
-  // { useNewUrlParser: true, user: 'mongoadmin', pass: 'mongoadmin' },
+  process.parsed.DB_HOST,
+  { useNewUrlParser: true, user: process.parsed.USERDB, pass: process.parsed.PASSWORD },
   err => {
     if (err) {
       console.log(err);
@@ -47,56 +45,16 @@ mongoose.connect(
 
 app.use(bodyParser.json() )
 app.use(bodyParser.urlencoded({extended: true}))
-app.get('/dcm', (req,res)=>{
-  return res.json({dm: "dm"})
-})
+
 app.use('/authen', userController)
 app.use('/stream', streamController)
 
 app.use(express.static(`${__dirname}/public`));
 
-// server.listen(3333,"172.16.1.158", err => {
-server.listen(3333,"172.16.2.5", err => {
+server.listen(process.parsed.PORT,process.parsed.HOST, err => {
   if (err) {
     console.log(err);
   } else {
-    console.log(`listening on port ${3333}`);
+    console.log(`listening on port ${3333} ${process.parsed.HOST}`);
   }
 });
-
-// const nodeMediaServerConfig = {
-//   rtmp: {
-//     port: 1935,
-//     chunk_size: 60000,
-//     gop_cache: true,
-//     ping: 60,
-//     ping_timeout: 30
-//   },
-//   http: {
-//     port: 8000,
-//     mediaroot: './media',
-//     allow_origin: '*'
-//   },
-//   trans: {
-//     ffmpeg: '/usr/bin/ffmpeg',
-//     tasks: [
-//       {
-//         app: 'live',
-//         ac: 'aac',
-//         mp4: true,
-//         mp4Flags: '[movflags=faststart]'
-//       }
-//     ]
-//   }
-// };
-
-// var nms = new NodeMediaServer(nodeMediaServerConfig);
-// nms.run();
-
-// nms.on('getFilePath', (streamPath, oupath, mp4Filename) => {
-//   console.log('---------------- get file path ---------------');
-//   console.log(streamPath);
-//   console.log(oupath);
-//   console.log(mp4Filename);
-//   utils.setMp4FilePath(oupath + '/' + mp4Filename);
-// });
