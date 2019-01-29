@@ -11,7 +11,7 @@ var headers = {
 }
 
 var options = {
-  url: 'http://172.16.2.5:3333/stream/insert_message',
+  url: 'http://172.16.1.158:3333/stream/insert_message',
   method: 'POST',
   headers: headers,
   json: {}
