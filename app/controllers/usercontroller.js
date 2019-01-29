@@ -6,8 +6,7 @@ const Room = require('../models/Room');
 const responseStatus =  require('../responeStatus')
 const util = require('../utils')
 var uniqid = require('uniqid')
-var forEach = require('async-foreach').forEach;
-
+const UserSql = require('../modelsSql/User')
 // clear data
 
 router.post('/register', async (req, res)=> {
@@ -60,28 +59,24 @@ router.post('/login', async (req, res) => {
   }
 })
 
-router.post('/list_liveStream', async (req, res) => {
-  const live = await Room.find({liveStatus: 1})
-  let list_live = []
-  await Promise.all(live.map(async (item) => {
-    const user = await User.findById(item.userId)
-    let element = { ...item._doc }
-    element.username = user.username
-    list_live.push(element)
-  }));
-  return res.json(util.formResponse(responseStatus.SUCCESS, { list_live }))
+router.post('/add_new_user', async (req, res) => {
+
+  let username = req.body.username
+  let password = req.body.password
+  let streamKey = req.body.streamKey
+  let token = req.body.token
+
+  const newuser = await UserSql.insertUser(username, password, streamKey, token)
+  return res.json(util.formResponse(responseStatus.SUCCESS, { newuser }))
 })
 
-router.get('/list_liveStream', async (req, res) => {
-  const live = await Room.find({liveStatus: 1})
-  let list_live = []
-  await Promise.all(live.map(async (item) => {
-    const user = await User.findById(item.userId)
-    let element = { ...item._doc }
-    element.username = user.username
-    list_live.push(element)
-  }));
-  return res.json(util.formResponse(responseStatus.SUCCESS, { list_live }))
+router.post('/get_user', async (req,res) => {
+  let id = req.body.id
+
+  const user = await UserSql.getUser(id)
+  return res.json(util.formResponse(responseStatus.SUCCESS, { user }))
+
 })
+
 
 module.exports = router

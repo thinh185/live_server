@@ -31,17 +31,17 @@ const socketIOController = require('./app/controllers/socketIO')(io);
 mongoose.Promise = global.Promise;
 global.appRoot = path.resolve(__dirname);
 
-mongoose.connect(
-  process.parsed.DB_HOST,
-  { useNewUrlParser: true, user: process.parsed.USERDB, pass: process.parsed.PASSWORD },
-  err => {
-    if (err) {
-      console.log(err);
-    } else {
-      console.log('Connected to the database: ', "mongodb://127.0.0.1:27017/livestream_upgrade?authSource=admin");
-    }
-  }
-);
+// mongoose.connect(
+//   process.parsed.DB_HOST,
+//   { useNewUrlParser: true, user: process.parsed.USERDB, pass: process.parsed.PASSWORD },
+//   err => {
+//     if (err) {
+//       console.log(err);
+//     } else {
+//       console.log('Connected to the database: ', "mongodb://127.0.0.1:27017/livestream_upgrade?authSource=admin");
+//     }
+//   }
+// );
 
 app.use(bodyParser.json() )
 app.use(bodyParser.urlencoded({extended: true}))
