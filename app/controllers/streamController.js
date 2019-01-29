@@ -9,7 +9,7 @@ const util = require('../utils')
 
 
 router.use('/list_live_stream', async (req, res) => {
-  const live = await Room.find({liveStatus: 1})
+  const live = await Room.find({liveStatus: 2})
   
   let list_live = []
   await Promise.all(live.map(async (item) => {
@@ -21,7 +21,7 @@ router.use('/list_live_stream', async (req, res) => {
   return res.json(util.formResponse(responseStatus.SUCCESS, { list_live }))
 })
 
-router.post('/insert_message', (req,res) => {
+router.use('/insert_message', (req,res) => {
   let username = req.body.username
   let userId = req.body.userId
   let message = req.body.message
@@ -33,7 +33,6 @@ router.post('/insert_message', (req,res) => {
     userId,
     content: message
   }).then(res => {
-    log
     return res.json({message: 'success'})
   }).catch(err => {
     console.log('err ', err);

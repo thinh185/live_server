@@ -49,6 +49,7 @@ app.use(bodyParser.urlencoded({extended: true}))
 app.use('/authen', userController)
 app.use('/stream', streamController)
 
+
 app.use(express.static(`${__dirname}/public`));
 
 server.listen(process.parsed.PORT,process.parsed.HOST, err => {
@@ -58,3 +59,5 @@ server.listen(process.parsed.PORT,process.parsed.HOST, err => {
     console.log(`listening on port ${3333} ${process.parsed.HOST}`);
   }
 });
+
+console.log('run-server success');

@@ -11,7 +11,7 @@ var headers = {
 }
 
 var options = {
-  url: 'http://172.16.1.158:3333/stream/insert_message',
+  url: 'http://172.16.2.5:3333/stream/insert_message',
   method: 'POST',
   headers: headers,
   json: {}
@@ -41,7 +41,8 @@ console.log(`time time ${length}`);
 for(let j=0; j< length ; j++){
   options.json = listjson[j]
   request.post(options, (error, response, body) => {
-
+      console.log('err ', error, response, body);
+      
       time++
       if(time == 2){
         var date = new Date()
