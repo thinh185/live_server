@@ -11,7 +11,7 @@ var headers = {
 }
 
 var options = {
-  url: 'http://192.168.10.122:3333/authen/get_user',
+  url: 'http://172.16.2.5:3333/stream/insert_message',
   method: 'POST',
   headers: headers,
   json: {}
@@ -24,15 +24,15 @@ randomId = () => {
 }
 
 for(let i=0 ; i< 10 ; i++) {
-  // listjson.push({
-  //   username: randomstring.generate(8),
-  //   password: randomstring.generate(10),
-  //   streamKey: randomstring.generate(10),
-  //   token: randomstring.generate(30),
-  // })
   listjson.push({
-    id: i
+    username: randomstring.generate(8),
+    password: randomstring.generate(10),
+    streamKey: randomstring.generate(10),
+    token: randomstring.generate(30),
   })
+  // listjson.push({
+  //   id: i
+  // })
 }
 var beginDate = new Date()
 console.log('list ',listjson );

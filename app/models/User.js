@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate');
 
 const Utils = require('../utils');
 
@@ -28,5 +29,5 @@ const UserSchema = new Schema({
     default: Utils.getCurrentDateTime()
   }
 });
-
+UserSchema.plugin(mongoosePaginate)
 module.exports = mongoose.model('User', UserSchema, 'users');

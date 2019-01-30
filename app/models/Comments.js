@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate');
 
 const Utils = require('../utils');
 
@@ -48,4 +49,5 @@ const CommentSchema = new Schema({
   }
 });
 
+CommentSchema.plugin(mongoosePaginate)
 module.exports = mongoose.model('CommentSchema', CommentSchema, 'comments');

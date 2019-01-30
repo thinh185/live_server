@@ -10,13 +10,6 @@ const path = require('path');
 const socketIO = require('socket.io');
 const process = require("dotenv").config({path: 'product.env'});
 
-const shopmodelsPath = `${__dirname}/app/models/`;
-fs.readdirSync(shopmodelsPath).forEach(file => {
-  if (~file.indexOf('.js')) {
-    require(`${shopmodelsPath}/${file}`);
-  }
-});
-
 // Controller
 const userController = require('./app/controllers/usercontroller')
 const streamController = require('./app/controllers/streamController')

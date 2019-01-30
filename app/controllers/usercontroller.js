@@ -8,6 +8,9 @@ const util = require('../utils')
 var uniqid = require('uniqid')
 const UserSql = require('../modelsSql/User')
 // clear data
+var fs = require('fs');
+
+let writeStream = fs.createWriteStream('../serverLog');
 
 router.post('/register', async (req, res)=> {
   try{
@@ -61,19 +64,27 @@ router.post('/login', async (req, res) => {
 
 router.post('/add_new_user', async (req, res) => {
 
-  let username = req.body.username
-  let password = req.body.password
-  let streamKey = req.body.streamKey
-  let token = req.body.token
+  let data = req.body
+  writeStream.write(`${data} data receipt success \n`)
 
-  const newuser = await UserSql.insertUser(username, password, streamKey, token)
+  if(!data.username) return res.json(util.formResponse(responseStatus.ERROR, {message: 'error'}))
+  const newuser = await UserSql.insertUser(data)
   return res.json(util.formResponse(responseStatus.SUCCESS, { newuser }))
 })
 
-router.post('/get_user', async (req,res) => {
-  let id = req.body.id
+router.get('/get_user', async (req,res) => {
+  let id = req.query.id
 
   const user = await UserSql.getUser(id)
+  return res.json(util.formResponse(responseStatus.SUCCESS, { user }))
+
+})
+
+router.put('/update_user/:id', async (req,res) => {
+  let id = req.params.id
+  
+  const data = req.body
+  const user = await UserSql.updateUser(id, data)
   return res.json(util.formResponse(responseStatus.SUCCESS, { user }))
 
 })

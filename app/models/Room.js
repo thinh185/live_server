@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate');
 
 const Utils = require('../utils');
 
@@ -63,4 +64,5 @@ const RoomSchema = new Schema({
   }
 });
 
+RoomSchema.plugin(mongoosePaginate)
 module.exports = mongoose.model('Room', RoomSchema, 'rooms');

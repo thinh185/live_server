@@ -6,6 +6,9 @@ const Comment = require('../models/Comments');
 
 const responseStatus =  require('../responeStatus')
 const util = require('../utils')
+var fs = require('fs');
+
+let writeStream = fs.createWriteStream('../serverLog');
 
 
 router.use('/list_live_stream', async (req, res) => {
@@ -21,24 +24,36 @@ router.use('/list_live_stream', async (req, res) => {
   return res.json(util.formResponse(responseStatus.SUCCESS, { list_live }))
 })
 
-router.use('/insert_message', (req,res) => {
+router.post('/insert_message', (req,res) => {
   let username = req.body.username
   let userId = req.body.userId
   let message = req.body.message
 
-  console.log(request.body);
-  
   Comment.create({
     username,
     userId,
     content: message
-  }).then(res => {
+  }).then(result => {
+    writeStream.write(`${result._id} message success \n`)
     return res.json({message: 'success'})
   }).catch(err => {
-    console.log('err ', err);
+    writeStream.write(`message error ${message} \n`)
     return res.json({message: 'error'})
   })
 
+})
+
+router.get('/read_message', (req, res) => {
+  let page = parseInt(req.query.page || 1)
+
+  Comment.paginate({}, {page, limit: 10}, (err, result) => {
+    if(err){
+      console.log(err);
+      
+      return res.json({ message: 'error'})
+    }
+    return res.json({result})
+  })
 })
 
 module.exports = router

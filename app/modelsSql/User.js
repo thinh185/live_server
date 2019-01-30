@@ -1,31 +1,52 @@
 const sequelize = require('./index')
 const Sequelize = require('sequelize');
+const randomstring = require("randomstring");
 
 const User = sequelize.define('User', {
   id: {
     type: Sequelize.INTEGER,
     unique: true,
     primaryKey: true,
+    allowNull: false,
+    autoIncrement: true,
   },
   username: {
-    type: Sequelize.STRING
+    type: Sequelize.TEXT
   },
-  password: {
-    type: Sequelize.STRING
+  email: {
+    type: Sequelize.TEXT
   },
-  streamKey: {
-    type: Sequelize.STRING
+  phone: {
+    type: Sequelize.TEXT
+  },
+  avatar: {
+    type: Sequelize.TEXT
+  },
+  introduce: {
+    type: Sequelize.TEXT
   },
   token: {
-    type: Sequelize.STRING
+    type: Sequelize.TEXT
+  },
+  age: {
+    type: Sequelize.INTEGER,
+    defaultValue: 16,
   }
 });
 
-User.insertUser = (username, password, streamKey, token) => {
-  console.log('vo day');
+randomUpdate = () =>  {
+  return {
+    username: randomstring.generate(8),
+    password: randomstring.generate(10),
+    streamKey: randomstring.generate(10),
+    token: randomstring.generate(30),
+  }
+}
+
+User.insertUser = (data) => {
   
   return new Promise((resolve, reject)=> {
-    User.create({username, password, streamKey,token}).then(res =>{
+    User.create(data).then(res =>{
       resolve(res)
     }).catch(err=>{
       reject(err)
@@ -35,9 +56,15 @@ User.insertUser = (username, password, streamKey, token) => {
 }
 
 User.getUser = async (id) => {
-  console.log("vo day")
   const user = await User.findById(id)
   return user
 }
+
+User.updateUser = async (id, data) => {
+  const updateUser = await User.update(data, {where: {id}})
+  return updateUser
+}
+
+User.sync({alter: true})
 
 module.exports = User

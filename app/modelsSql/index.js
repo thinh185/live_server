@@ -11,6 +11,7 @@ const sequelize = new Sequelize('LiveStream', 'root', 'thinh102', {
     idle: 10000
   },
 
+  logging: false
 });
 
 module.exports = sequelize
